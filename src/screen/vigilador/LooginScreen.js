@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,9 +12,59 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
+import {auth} from "../../firebaseConfig/firebaseConfig"
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { query, collection, where, getDocs,getDoc,doc} from "firebase/firestore";
+import { db } from '../../firebaseConfig/firebaseConfig';
 
+const LoginScreen = ({setIsLoggedIn,setRole }) => {
+const [password,setPassword]=useState("")
+const [user,setUser]=useState("")
+const [role]=useState("")
 
-const LoginScreen = ({navigation,setIsLoggedIn }) => {
+const handelLogin = async () => {
+  
+  try {
+    let emailToLogin = ""; // 👈 variable editable
+
+    if (user) {
+      const q = query(
+        collection(db, "users"),
+        where("username", "==", user)
+      );
+
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        alert("Usuario no encontrado.");
+        return; // 👈 cortar ejecución
+      }
+
+      emailToLogin = querySnapshot.docs[0].data().email; // 👈 asignamos el email
+    }
+
+    if (!emailToLogin) {
+      alert("No se pudo obtener el email del usuario.");
+      return;
+    }
+
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      emailToLogin,
+      password
+    );
+     const ref = doc(db, "users", userCredential.user.uid);
+    const snapshot = await getDoc(ref);
+    
+      setRole(snapshot.data().role);
+      setIsLoggedIn(true);
+     
+  } catch (error) {
+    console.log(error);
+    alert("Usuario o contraseña incorrectos.");
+  }
+};
+    
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" backgroundColor="#000" />
@@ -44,6 +94,7 @@ const LoginScreen = ({navigation,setIsLoggedIn }) => {
                 placeholder="Enter your email"
                 keyboardType="email-address"
                 placeholderTextColor="#aaa"
+                onChangeText={(text)=>setUser(text)}
               />
             </View>
           </View>
@@ -58,6 +109,7 @@ const LoginScreen = ({navigation,setIsLoggedIn }) => {
                 placeholder="Enter your password"
                 secureTextEntry
                 placeholderTextColor="#aaa"
+                onChangeText={(text)=>setPassword(text)}
               />
             </View>
           </View>
@@ -72,7 +124,7 @@ const LoginScreen = ({navigation,setIsLoggedIn }) => {
           </View>
 
           {/* Botón Sign In */}
-          <TouchableOpacity style={styles.signInButton} onPress={() => {setIsLoggedIn(true)}}>
+          <TouchableOpacity style={styles.signInButton} onPress={handelLogin}>
             <Text style={styles.signInButtonText}>Iniciar sesion</Text>
           </TouchableOpacity>
 
