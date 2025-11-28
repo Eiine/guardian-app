@@ -30,7 +30,7 @@ const LoginScreen = ({navigation,setIsLoggedIn }) => {
           <Text style={styles.loginTitle}>Login</Text>
 
           <Image
-            source={require('../../assets/Logo.png')}
+            source={require('../../../assets/Logo.png')}
             style={styles.logo}
           />
 

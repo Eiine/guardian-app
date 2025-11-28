@@ -1,17 +1,19 @@
 import * as React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import StackNavigator from './src/navigation/StackNavigator';
-import DrawerNavigator from './src/navigation/DrawNavigator';
-
+import DrawerSupervisor from './src/navigation/DrawerSupervisor';
+import DrawerVigilador from "./src/navigation/DrawerVigilador"
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
-
-  return (
+  const [role, setRole] = React.useState(null);
+   return (
     <NavigationContainer>
-      {isLoggedIn ? (
-        <DrawerNavigator />
+      {!isLoggedIn ? (
+        <StackNavigator setIsLoggedIn={setIsLoggedIn} setRole={setRole} />
+      ) : role === "supervisor" ? (
+        <DrawerSupervisor />
       ) : (
-        <StackNavigator setIsLoggedIn={setIsLoggedIn} />
+        <DrawerVigilador />
       )}
     </NavigationContainer>
   );
