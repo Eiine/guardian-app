@@ -1,6 +1,6 @@
 # Dependencias de Node
 node_modules/
-
+src/firebaseConfig
 # Logs
 *.log
 npm-debug.log*
