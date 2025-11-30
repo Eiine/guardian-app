@@ -2,26 +2,32 @@ import { useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
-  Switch,
-  Image,
   StyleSheet,
   ScrollView,
-  StatusBar,
 } from 'react-native';
 
-export default function DiagramaTable({ diagrama, role }) {
+export default function DiagramaTable({ diagrama, role, usersById = {} }) {
   const [selectedVigilador, setSelectedVigilador] = useState(null);
-  const diasMax = Math.max(...diagrama.vigiladores.map(v => Math.max(...Object.keys(v.dias).map(Number))));
 
-  const isEditable = role === 'supervisor'; // solo supervisor puede editar
+  // seguridad: si no existe diagrama.vigiladores, evitamos crash
+  const vigiladores = Array.isArray(diagrama?.vigiladores) ? diagrama.vigiladores : [];
+
+  // calcular el máximo día presente en todos los vigiladores
+  const diasMax = vigiladores.length === 0
+    ? 0
+    : Math.max(...vigiladores.map(v => {
+        const keys = v.dias ? Object.keys(v.dias).map(k => Number(k)).filter(n => !isNaN(n)) : [];
+        return keys.length ? Math.max(...keys) : 0;
+      }));
+
+  const isEditable = role === 'supervisor';
 
   return (
     <ScrollView horizontal>
       <View>
         {/* Header */}
-        <View style={styles.row}>
+        <View style={[styles.row, styles.headerRow]}>
           <View style={[styles.cell, styles.vigiladorCell, styles.headerCell]}>
             <Text style={styles.headerText}>Vigilador</Text>
           </View>
@@ -34,7 +40,7 @@ export default function DiagramaTable({ diagrama, role }) {
 
         {/* Filas */}
         <ScrollView style={{ maxHeight: 500 }}>
-          {diagrama.vigiladores.map((vigilador, idx) => {
+          {vigiladores.map((vigilador, idx) => {
             const isSelected = selectedVigilador === idx;
 
             const onRowPress = () => {
@@ -43,28 +49,42 @@ export default function DiagramaTable({ diagrama, role }) {
               }
             };
 
+            // resolver nombre a partir del mapa usersById
+            const uid = vigilador.uid || vigilador.id || vigilador.usuarioId || `uid_${idx}`;
+            const userObj = usersById && usersById[uid];
+            const displayName = userObj?.fullName || userObj?.nombre || uid;
+
             return (
               <TouchableOpacity
-                key={idx}
+                key={uid + "-" + idx}
                 onPress={onRowPress}
                 activeOpacity={0.8}
               >
                 <View style={[styles.row, isSelected && styles.selectedRow]}>
                   {/* Nombre */}
                   <View style={[styles.cell, styles.vigiladorCell]}>
-                    <Text style={isSelected && styles.selectedText}>{vigilador.nombre}</Text>
+                    <Text style={isSelected ? styles.selectedText : styles.normalText}>
+                      {displayName}
+                    </Text>
                   </View>
 
                   {/* Celdas de días */}
                   {Array.from({ length: diasMax }, (_, i) => (
-                    <View key={i} style={[styles.cell, isSelected && styles.selectedRow]}>
-                      <Text>{vigilador.dias[i + 1] || '-'}</Text>
+                    <View key={i} style={[styles.cell]}>
+                      <Text>{(vigilador.dias && vigilador.dias[String(i + 1)]) || '-'}</Text>
                     </View>
                   ))}
                 </View>
               </TouchableOpacity>
             );
           })}
+
+          {/* si no hay vigiladores */}
+          {vigiladores.length === 0 && (
+            <View style={styles.emptyRow}>
+              <Text>No hay vigiladores para este diagrama</Text>
+            </View>
+          )}
         </ScrollView>
       </View>
     </ScrollView>
@@ -72,17 +92,44 @@ export default function DiagramaTable({ diagrama, role }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
-  sectionTitle: { fontSize: 18, fontWeight: 'bold', marginTop: 20, marginBottom: 5 },
-  cardContainer: { marginBottom: 10 },
-  card: {
-    padding: 10,
-    marginVertical: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    backgroundColor: '#f9f9f9',
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  cardText: { fontSize: 14 },
+  headerRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  cell: {
+    padding: 10,
+    minWidth: 60,
+    borderRightWidth: 1,
+    borderRightColor: "#eee",
+    justifyContent: "center",
+  },
+  vigiladorCell: {
+    minWidth: 180,
+    backgroundColor: "#fafafa",
+  },
+  headerCell: {
+    backgroundColor: "#f0f0f0",
+  },
+  headerText: {
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  selectedRow: {
+    backgroundColor: "#e6f7ff",
+  },
+  selectedText: {
+    fontWeight: "bold",
+    color: "#0b66c3",
+  },
+  normalText: {
+    color: "#111",
+  },
+  emptyRow: {
+    padding: 20,
+    alignItems: "center",
+  },
 });
